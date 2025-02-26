@@ -238,6 +238,7 @@ int main(){
 	for(int i = 0; i < capacity; i++) sym_tbl[i] = NULL;
 	FILE* file = fopen("input.txt", "r");
 	yyin = file;
+	print_token("LEXEME", "TOKEN");
 	yylex();
 	fclose(yyin);
 	for(int i = 0; i < size; i++){
