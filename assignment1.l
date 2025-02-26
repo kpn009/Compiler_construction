@@ -239,6 +239,7 @@ int main(){
 	FILE* file = fopen("input.txt", "r");
 	yyin = file;
 	print_token("LEXEME", "TOKEN");
+	print_token("--------------", "--------------");
 	yylex();
 	fclose(yyin);
 	for(int i = 0; i < size; i++){
