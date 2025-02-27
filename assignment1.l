@@ -4,9 +4,9 @@
 #include <ctype.h>
 #include <stdlib.h>
 #define NUM_OF_KEYWORDS 18 // this are total number of keywords in toy language
-#define ID_LIMIT 256 //this is the max size of the string for any identifier in toy language
+#define ID_LIMIT 1024 //this is the max size of the string for any identifier in toy language
 #define NUM_LIMIT 20 //max_limit for any integer in toy language
-#define STR_LIMIT 256 //max_limit for any string in toy language
+#define STR_LIMIT 1024 //max_limit for any string in toy language
 char var_name[ID_LIMIT];
 char var_type[ID_LIMIT];
 char op_string[STR_LIMIT];
@@ -37,7 +37,7 @@ WHITESPACE [ \t\n]
 
 %%
 
-"begin"|"program"|"int"|"char"|"if"|"else"|"while"|"for"|"main"|"end"|"inc"|"dec"|"then"|"to"|"do" {
+"begin"|"program"|"int"|"char"|"if"|"else"|"while"|"for"|"main"|"end"|"inc"|"dec"|"to"|"do" {
     print_token(yytext, "Keyword");
 }
 "VarDecl" {print_token(yytext, "Keyword"); BEGIN(VARDECL);}
@@ -75,7 +75,7 @@ WHITESPACE [ \t\n]
 . {print_token(yytext,"Error : invalid token");}
 
 <VARDECL>: {print_token(yytext, "Separator");}
-<VARDECL>\([ \t]*{LETTER}{ID_ALPHABET}*[ \t]*,[ \t]*(int|char)[ \t]*\) {
+<VARDECL>\([ \t]*{LETTER}{ID_ALPHABET}*(\[{DIGIT}+\])?[ \t]*,[ \t]*(int|char)[ \t]*\) {
 	sscanf(yytext, "(%[^,], %[^)])", var_name, var_type);
 	print_token("(", "Separator");
 	if(!is_declared(var_name, sym_tbl)){
@@ -120,7 +120,9 @@ WHITESPACE [ \t\n]
 <VARDECL>"VarDecl" {print_token(yytext, "Keyword"); BEGIN(0);}
 <VARDECL>{WHITESPACE}+ {/*Ignore whitespace*/}
 <VARDECL>[^ \t\n]+ {
-	if(strcmp(yytext, "end") != 0 && strcmp(yytext, "VarDecl") != 0){
+	int check_for_comm = 0;
+	if(yytext[0] == '\\' && yytext[1] == '*') check_for_comm = 1;
+	if(strcmp(yytext, "end") != 0 && strcmp(yytext, "VarDecl") != 0 && check_for_comm){
 		print_token(yytext, "Error : invalid token");
 	}
 	else REJECT;
@@ -184,10 +186,12 @@ int is_valid_integer(char* str){
 }
 
 int is_valid_identifier(char* str){
+	char limit = '\0';
+	if(strchr(str, '[') != NULL) limit = '[';
 	if(strlen(str) > ID_LIMIT) return 0;
 	if(!islower(str[0])) return 0;
 	int underscore_count = 0;
-	for(int i = 1; str[i] != '\0'; i++){
+	for(int i = 1; str[i] != limit; i++){
 		if(str[i] == '_') underscore_count ++;
 		else if(!islower(str[i]) && !isdigit(str[i])) return 0;
 	}
@@ -238,8 +242,6 @@ int main(){
 	for(int i = 0; i < capacity; i++) sym_tbl[i] = NULL;
 	FILE* file = fopen("input.txt", "r");
 	yyin = file;
-	print_token("LEXEME", "TOKEN");
-	print_token("--------------", "--------------");
 	yylex();
 	fclose(yyin);
 	for(int i = 0; i < size; i++){
